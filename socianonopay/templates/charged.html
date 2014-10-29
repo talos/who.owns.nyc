@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+
+{% block body %}
+  Hi {{ current_user.id }}, you have been successfully charged ${{ charge }}.
+  
+  Your remaining balance is ${{ current_user.balance }}.
+{% endblock body %}

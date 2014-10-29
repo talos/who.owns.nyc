@@ -1,3 +1,4 @@
+import stripe
 from flask import Flask, request_started
 from socianonopay import login_manager
 from socianonopay.models import db, User
@@ -19,5 +20,7 @@ def create_app():
   register_routes(app)
 
   request_started.connect(request_started_handler, app)
+
+  stripe.api_key = app.config.get(u"STRIPE_API_KEY")
 
   return app
