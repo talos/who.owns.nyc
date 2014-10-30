@@ -22,3 +22,12 @@ def register_routes(app):
         db.session.commit()
 
     return redirect(url_for('index'))
+
+  @app.route('/query', methods=['POST'])
+  def query():
+    sql = request.form['sql']
+    if sql:
+      debit = current_user.bq_query(sql)
+      db.session.add(debit)
+      db.session.commit()
+    return redirect(url_for('index'))
