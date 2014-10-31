@@ -1,7 +1,7 @@
 from flask.ext.script import Manager
 
-from socianonopay.models import db
-from socianonopay.factory import create_app
+from who_owns_nyc.models import db
+from who_owns_nyc.factory import create_app
 
 app = create_app()
 

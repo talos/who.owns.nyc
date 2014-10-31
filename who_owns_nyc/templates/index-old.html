@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block body %}
+<form action="/charge?amount=2000" method="POST">
+  <script
+    src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+    data-key="pk_test_oFnYiwaHFsAfXy5yTUSEMlDV"
+    data-amount="2000"
+    data-name="Demo Site"
+    data-description="$20 Credit"
+    data-label="$20 credit"
+    data-image="/128x128.png">
+  </script>
+</form>
+
+<form action="/charge?amount=1000" method="POST">
+  <script
+    src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+    data-key="pk_test_oFnYiwaHFsAfXy5yTUSEMlDV"
+    data-amount="1000"
+    data-name="Demo Site"
+    data-description="$10 Credit"
+    data-label="$10 credit"
+    data-image="/128x128.png">
+  </script>
+</form>
+
+<form action="/charge?amount=500" method="POST">
+  <script
+    src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+    data-key="pk_test_oFnYiwaHFsAfXy5yTUSEMlDV"
+    data-amount="500"
+    data-name="Demo Site"
+    data-description="$5 Credit"
+    data-label="$5 credit"
+    data-image="/128x128.png">
+  </script>
+</form>
+
+<form action="/query" method="POST">
+  <label for="sql">SQL:</label>
+  <textarea name="sql" cols="80" rows="3">select count(*) from acris.real_flat</textarea>
+  <button type="submit">Submit</button>
+</form>
+
+Hello {{ current_user.id }} ({{ current_user.token }})!  Your remaining balance is {{ current_user.balance_as_dollars }}.
+
+<table>
+  {% for debit in current_user.debits %}
+    <tr>
+      <td>
+        {{ debit.response }}
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+{% endblock %}
