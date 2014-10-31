@@ -1,9 +1,9 @@
 import stripe
 from flask import Flask, request_started
-from socianonopay import login_manager
-from socianonopay.models import db, User
-from socianonopay.signals import request_started_handler
-from socianonopay.views import register_routes
+from who_owns_nyc import login_manager
+from who_owns_nyc.models import db, User
+from who_owns_nyc.signals import request_started_handler
+from who_owns_nyc.views import register_routes
 
 def get_user(user_id):
   return User.query.get(user_id)

@@ -1,6 +1,6 @@
 from flask.ext.login import current_user, login_user
 
-from socianonopay.models import db, User
+from who_owns_nyc.models import db, User
 
 def request_started_handler(sender, **extra):
 

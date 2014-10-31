@@ -43,7 +43,7 @@
   <button type="submit">Submit</button>
 </form>
 
-Hello {{ current_user.id }} ({{ current_user.token }})!  Your remaining balance is ${{ current_user.balance }}.
+Hello {{ current_user.id }} ({{ current_user.token }})!  Your remaining balance is {{ current_user.balance_as_dollars }}.
 
 <table>
   {% for debit in current_user.debits %}

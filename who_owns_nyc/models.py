@@ -5,8 +5,8 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import UserMixin
 from sqlalchemy.sql import func
 
-from socianonopay.helpers import generate_token
-from socianonopay.bigquery import query, bytes2expense
+from who_owns_nyc.helpers import generate_token
+from who_owns_nyc.bigquery import query, bytes2expense
 
 db = SQLAlchemy()
 
@@ -51,10 +51,14 @@ class User(db.Model, UserMixin):
 
   @property
   def balance(self):
-    total_debit = sum(float(d.amount) for d in self.debits)
-    total_credit = sum(float(d.amount) for d in self.credits)
+    total_debit = sum(d.amount for d in self.debits)
+    total_credit = sum(d.amount for d in self.credits)
 
     return total_credit - total_debit
+
+  @property
+  def balance_as_dollars(self):
+    return u'$' + unicode(float(self.balance) / 100)
 
   def is_anonymous(self):
     return True

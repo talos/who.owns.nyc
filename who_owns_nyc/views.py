@@ -1,7 +1,7 @@
 from flask import render_template, request, url_for, redirect
 from flask.ext.login import current_user
 
-from socianonopay.models import db
+from who_owns_nyc.models import db
 
 def register_routes(app):
 

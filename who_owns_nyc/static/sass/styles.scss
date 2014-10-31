@@ -1,0 +1,20 @@
+// customize bootstrap variables here:
+//@import "variables";
+@import "bootstrap";
+
+#header {
+  #title {
+    display: none;
+  }
+
+  #query {
+
+    textarea {
+    }
+  }
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+}

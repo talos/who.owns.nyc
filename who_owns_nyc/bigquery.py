@@ -18,6 +18,7 @@ credentials = SignedJwtAssertionCredentials(
     key,
     scope='https://www.googleapis.com/auth/bigquery')
 
+# TODO this will expire after several hours...
 http = httplib2.Http()
 http = credentials.authorize(http)
 
