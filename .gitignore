@@ -2,4 +2,5 @@
 config*
 *.db
 key.p12
-who_owns_nyc/static/css
+who_owns_nyc/static/stylesheets
+.sass-cache
