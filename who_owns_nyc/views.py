@@ -1,4 +1,4 @@
-from flask import render_template, request, url_for, redirect
+from flask import render_template, request, url_for, redirect, Response
 from flask.ext.login import current_user
 
 from who_owns_nyc.models import db
@@ -30,4 +30,4 @@ def register_routes(app):
       debit = current_user.bq_query(sql)
       db.session.add(debit)
       db.session.commit()
-    return redirect(url_for('index'))
+    return Response(debit.response, mimetype='application/json')

@@ -3,7 +3,7 @@
 */
 
 /*jshint browser: true, unused: false, maxstatements:40*/
-/*global React:false, L:false, gapi:false, proj4, $*/
+/*global React:false, L:false, proj4, $*/
 
 // HELPERS
 var reproject = proj4($('meta[name=pluto-proj4]').attr('content')).inverse;
@@ -422,28 +422,10 @@ var StatusBar = React.createClass({
   }
 });
 
-var APISettingsBar = React.createClass({
-  render: function () {
-    /* jshint ignore:start */
-    return (
-      <div>
-        <label htmlFor="googleProjectId">Google Project ID</label>
-        <input name="googleProjectId"
-               type="text"
-               onChange={this.props.onProjectIdChange}
-               value={this.props.projectId}
-        />
-      </div>
-    );
-    /* jshint ignore:end */
-  }
-});
-
 var App = React.createClass({
 
   getInitialState: function () {
     return {
-      projectId: this.props.projectId,
       history: [],
       markers: [],
       input: {
@@ -451,54 +433,39 @@ var App = React.createClass({
     };
   },
 
-  authorize: function (callback) {
-    var self = this;
-    this.setState({'status': 'Authorizing'});
-    gapi.auth.authorize({
-      'client_id': '682518744611-ohch249uho63h8csg6qh32s393jsgdvk.' +
-                   'apps.googleusercontent.com',
-      'scope': 'https://www.googleapis.com/auth/bigquery.readonly'
-    }, function() {
-      gapi.client.load('bigquery', 'v2', function () {
-        self.setState({authorizedProjectId: self.state.projectId});
-        callback();
-      });
-    });
-  },
-
   onSubmitQuery: function (evt) {
     if (evt) {
       evt.preventDefault();
     }
-    if (this.isAuthorized()) {
-      var query = this.refs.query,
-          self = this;
+    var query = this.refs.query,
+        self = this;
 
-      pipeline(query.before, this.state.input).done(function (data) {
-        self.setState({'input': $.extend({}, self.state.input, data)});
-        var request = gapi.client.bigquery.jobs.query({
-          'projectId': self.state.projectId,
-          'timeoutMs': '30000',
-          'query': self.refs.query.toSQL()
+    pipeline(query.before, this.state.input).done(function (data) {
+      self.setState({'input': $.extend({}, self.state.input, data)});
+      self.setState({'status': 'Querying'});
+      $.ajax({
+        type: 'POST',
+        url: '/query',
+        data: {
+          sql: self.refs.query.toSQL()
+        }
+      }).done(self.handleQueryResponse)
+        .fail(function (jqXHR, status, error) {
+          self.setState({status: 'Error'});
+          window.console.log(error);
         });
-        self.setState({'status': 'Querying'});
-
-        request.execute(self.handleQueryResponse);
-      }).fail(function (resp) {
-        self.setState({status: 'Error'});
-        window.console.log(resp);
-      });
-    } else {
-      this.authorize(this.onSubmitQuery);
-    }
+    }).fail(function (resp) {
+      self.setState({status: 'Error'});
+      window.console.log(resp);
+    });
   },
 
   handleQueryResponse: function (response) {
     try {
       var markers = [],
           fields = response.schema.fields;
-      for (var i in response.result.rows) {
-        var item = response.result.rows[i],
+      for (var i in response.rows) {
+        var item = response.rows[i],
             xcoord = parseFloat(item.f[0].v),
             ycoord = parseFloat(item.f[1].v),
             data = {};
@@ -542,18 +509,8 @@ var App = React.createClass({
     this.setState({input: newInput});
   },
 
-  onProjectIdChange: function (evt) {
-    this.setState({
-      projectId: evt.target.value
-    });
-  },
-
   setQueryText: function (queryText) {
     this.setState({query: queryText});
-  },
-
-  isAuthorized: function () {
-    return this.state.authorizedProjectId === this.state.projectId;
   },
 
   //getQuery: function () {
@@ -573,8 +530,8 @@ var App = React.createClass({
         canSubmit = true;
       }
     }
-    if (response && response.result) {
-      var bytesProcessed = response.result.totalBytesProcessed;
+    if (response) {
+      var bytesProcessed = response.totalBytesProcessed;
       var expense = (parseFloat(bytesProcessed) * 5 / Math.pow(1024, 4))
         .toFixed(3);
     }
@@ -602,6 +559,8 @@ var App = React.createClass({
                     />
                   </a>
                 </li>
+                <li>
+                </li>
                 <li className="dropdown">
                   <a href="#" className="dropdown-toggle"
                               data-toggle="dropdown">
@@ -619,11 +578,6 @@ var App = React.createClass({
                     Edit<b className="caret"></b>
                   </a>
                   <ul className="dropdown-menu">
-                    <li>
-                      <APISettingsBar projectId={this.state.projectId}
-                                      onProjectIdChange={this.onProjectIdChange}
-                      />
-                    </li>
                   </ul>
                 </li>
                 <li className="navbar-form {canSubmit ? '' : 'has-error'}">
@@ -638,7 +592,7 @@ var App = React.createClass({
                           disabled={!canSubmit}
                           //disabled={this.state.query === lastQuery}
                           >
-                    {this.isAuthorized() ? "" : "Authorize and " }Query
+                    Query
                   </button>
                   </li>
               </ul>
@@ -659,9 +613,8 @@ var App = React.createClass({
 //    defaultEnd = ;
 React.renderComponent(
   /*jshint ignore:start */
-  //<App query={$('#defaultQuery').text().replace(/\s+/g, ' ')}
-  <App projectId = '682518744611' />,
+  <App />,
   /*jshint ignore:end */
-  document.getElementById('body')
+  document.getElementById('container')
 );
 
