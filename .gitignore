@@ -1,0 +1,8 @@
+*.pyc
+config*
+*.db
+key.p12
+who_owns_nyc/static/.webassets-cache/
+who_owns_nyc/static/stylesheets/
+who_owns_nyc/static/gen/
+.sass-cache
