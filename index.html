@@ -1,17 +1,22 @@
 <html>
   <head>
-
+    <script src="libs/jquery-1.11.1.min.js"></script>
+    <script src="app.js"></script>
   </head>
   <body>
-  <label for="borough">Borough</label>
-  <input name="borough" />
+    <form id="form">
+      <label for="borough">Borough</label>
+      <input id="borough" name="borough" />
 
-  <label for="block">Block</label>
-  <input name="block" />
+      <label for="block">Block</label>
+      <input id="block" name="block" />
 
-  <label for="lot">Lot</label>
-  <input name="lot" />
+      <label for="lot">Lot</label>
+      <input id="lot" name="lot" />
 
-  <button type="submit" id="submit">
+      <button type="submit" id="submit">Submit</button>
+    </form>
+
+    <div id="output">output</div>
   </body>
 </html>
