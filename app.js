@@ -14,7 +14,7 @@ var search = function (evt) {
     dataType: "jsonp"
   }).done(function(data) {
     //Array.prototype.push.apply(rows, data);
-    $('#output').text(JSON.stringify(rows));
+    $('#output').text(JSON.stringify(data));
 
     // TODO: obtain master and party data from this
   });
