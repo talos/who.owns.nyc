@@ -1,7 +1,8 @@
 <html>
   <head>
     <script src="libs/jquery-1.11.1.min.js"></script>
-    <script src="app.js"></script>
+    <script src="libs/react-0.12.0-dev.js"></script>
+    <script src="libs/JSXTransformer-0.12.0.js"></script>
   </head>
   <body>
     <form id="form">
@@ -17,6 +18,9 @@
       <button type="submit" id="submit">Submit</button>
     </form>
 
-    <div id="output">output</div>
+    <table id="data" class="display" cellspacing="0" width="100%">
+    </table>
+  <script type="text/jsx" src="libs/reactable.js"></script>
+  <script type="text/jsx" src="app.js"></script>
   </body>
 </html>
