@@ -1,21 +1,26 @@
 /** @jsx React.DOM */
-"use strict";
+/*jslint plusplus:true, camelcase:false, strict:false, browser:true*/
+/*globals $, Reactable*/
 
+"use strict";
 var search = function (evt) {
   evt.stopPropagation();
-  var borough = $('#borough').val();
-  var block = $('#block').val();
-  var lot = $('#lot').val();
+  var borough = $('#borough').val(),
+      block = $('#block').val(),
+      lot = $('#lot').val(),
+      dataUrl = "https://data.cityofnewyork.us/resource/",
+      legalsResource = "8h5j-fqxa",
+      masterResource = "bnx9-e6tj",
+      partiesResource = "636b-3b5g";
 
   // Obtain property JSON
   $.ajax({
-    url: "http://data.cityofnewyork.us/resource/8h5j-fqxa.json?$where=borough=" +
+    url: dataUrl + "/" + legalsResource + ".json?$where=borough=" +
       borough + "%20and%20block=" + block + "%20and%20lot=" + lot,
     jsonp: "$jsonp",
     dataType: "jsonp"
   }).done(function(data) {
     //Array.prototype.push.apply(rows, data);
-    //$('#output').text(JSON.stringify(data));
 
     var where = [];
     var i = 0;
@@ -26,13 +31,13 @@ var search = function (evt) {
     where = where.join(' OR ');
 
     var master = $.ajax({
-      url: "http://data.cityofnewyork.us/resource/bnx9-e6tj.json?$where=" + where,
+      url: dataUrl + "/" + masterResource + ".json?$where=" + where,
       jsonp: "$jsonp",
       dataType: "jsonp"
     });
 
     var parties = $.ajax({
-      url: "http://data.cityofnewyork.us/resource/636b-3b5g.json?$where=" + where,
+      url: dataUrl + "/" + partiesResource + ".json?$where=" + where,
       jsonp: "$jsonp",
       dataType: "jsonp"
     });
