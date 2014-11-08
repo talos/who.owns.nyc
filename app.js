@@ -15,7 +15,7 @@ var search = function (evt) {
 
   // Obtain property JSON
   $.ajax({
-    url: dataUrl + "/" + legalsResource + ".json?$where=borough=" +
+    url: dataUrl + legalsResource + ".json?$where=borough=" +
       borough + "%20and%20block=" + block + "%20and%20lot=" + lot,
     jsonp: "$jsonp",
     dataType: "jsonp"
@@ -31,13 +31,13 @@ var search = function (evt) {
     where = where.join(' OR ');
 
     var master = $.ajax({
-      url: dataUrl + "/" + masterResource + ".json?$where=" + where,
+      url: dataUrl + masterResource + ".json?$where=" + where,
       jsonp: "$jsonp",
       dataType: "jsonp"
     });
 
     var parties = $.ajax({
-      url: dataUrl + "/" + partiesResource + ".json?$where=" + where,
+      url: dataUrl + partiesResource + ".json?$where=" + where,
       jsonp: "$jsonp",
       dataType: "jsonp"
     });
