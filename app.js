@@ -68,13 +68,23 @@ var splitAddress = function (rawAddress, houseNumber, street, borough) {
 
 var AddressBar = React.createClass({
 
+  getInitialState: function () {
+    return {
+      input: this.props.input
+    };
+  },
+
   onAddressChange: function (/*evt*/) {
     var rawAddress = this.refs.address.getDOMNode().value;
-    this.props.onInputChange(splitAddress(rawAddress));
+    this.onInputChange(splitAddress(rawAddress));
+  },
+
+  onInputChange: function (newInput) {
+    this.setState({input: newInput});
   },
 
   address: function () {
-    var input = this.props.input;
+    var input = this.state.input;
     var address = '';
     var trailingChar = '';
     if (this.refs.address) {
@@ -104,10 +114,8 @@ var AddressBar = React.createClass({
     return address;
   },
 
-  before: [geoclient('address')],
-
   validate: function () {
-    var input = this.props.input;
+    var input = this.state.input;
     if (!input.houseNumber) {
       return "Missing house number.";
     } else if (!input.street) {
@@ -117,19 +125,29 @@ var AddressBar = React.createClass({
     }
   },
 
+  onSubmit: function (evt) {
+    evt.preventDefault();
+    geoclient('address')(this.state.input).done(function (resp) {
+      search(resp.bblBoroughCode, resp.bblTaxBlock, resp.bblTaxLot);
+    });
+    return false;
+  },
+
   render: function () {
     /* jshint ignore:start */
     return (
-      <div className="hint--bottom"
-           data-hint={this.validate()}>
-        <input name="address"
-               className="form-control"
-               ref="address"
-               placeholder="Address"
-               value={this.address()}
-               onChange={this.onAddressChange} />
-        <button type="submit" id="submit">Submit</button>
-     </div>
+      <form ref="form" onSubmit={this.onSubmit}>
+        <div className="hint--bottom"
+             data-hint={this.validate()}>
+          <input name="address"
+                 className="form-control"
+                 ref="address"
+                 placeholder="Address"
+                 value={this.address()}
+                 onChange={this.onAddressChange} />
+          <button type="submit" id="submit">Submit</button>
+        </div>
+      </form>
     );
     /* jshint ignore:end */
   }
@@ -137,12 +155,8 @@ var AddressBar = React.createClass({
 });
 
 
-var search = function (evt) {
-  evt.stopPropagation();
-  var borough = $('#borough').val(),
-      block = $('#block').val(),
-      lot = $('#lot').val(),
-      dataUrl = "https://data.cityofnewyork.us/resource/",
+var search = function (borough, block, lot) {
+  var dataUrl = "https://data.cityofnewyork.us/resource/",
       legalsResource = "8h5j-fqxa",
       masterResource = "bnx9-e6tj",
       partiesResource = "636b-3b5g";
@@ -218,7 +232,6 @@ var search = function (evt) {
 };
 
 $(document).ready(function () {
-  $('#form').on('submit', search);
   /*jshint ignore:start*/
   React.render(
     <AddressBar input={{}} />,
