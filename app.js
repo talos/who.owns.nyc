@@ -221,8 +221,8 @@ var search = function (borough, block, lot) {
       /*jshint ignore:start*/
       var Table = Reactable.Table;
       var table = React.render(
-        <Table className="table" data={data} sortable={true}
-               filterable={["doc_type"]} />,
+        <Table className="table" data={data} defaultSort={'recorded_datetime'}
+        sortable={[ 'recorded_datetime', 'document_date']} filterable={["doc_type"]} />,
         document.getElementById('data')
       );
       /*jshint ignore:end*/
