@@ -160,14 +160,14 @@ var search = function (borough, block, lot) {
       legalsResource = "8h5j-fqxa",
       masterResource = "bnx9-e6tj",
       partiesResource = "636b-3b5g",
-      appToken = "$$app_token=UlQ1WIMp3NyhVF2Km0zveytPV";
+      appToken = ".json?$$app_token=UlQ1WIMp3NyhVF2Km0zveytPV";
 
   // Obtain property JSON
   $.ajax({
-    url: dataUrl + legalsResource + ".json?$where=borough=" +
-      borough + "%20and%20block=" + block + "%20and%20lot=" + lot,
-    jsonp: "$jsonp",
-    dataType: "jsonp"
+    url: dataUrl + legalsResource + appToken + "&$where=borough=" +
+      borough + "%20and%20block=" + block + "%20and%20lot=" + lot
+    //jsonp: "$jsonp",
+    //dataType: "jsonp"
   }).done(function(data) {
     //Array.prototype.push.apply(rows, data);
 
@@ -180,15 +180,15 @@ var search = function (borough, block, lot) {
     where = where.join(' OR ');
 
     var master = $.ajax({
-      url: dataUrl + masterResource + ".json?$where=" + where,
-      jsonp: "$jsonp",
-      dataType: "jsonp"
+      url: dataUrl + masterResource + appToken + "&$where=" + where
+      //jsonp: "$jsonp",
+      //dataType: "jsonp"
     });
 
     var parties = $.ajax({
-      url: dataUrl + partiesResource + ".json?$where=" + where,
-      jsonp: "$jsonp",
-      dataType: "jsonp"
+      url: dataUrl + partiesResource + appToken + "&$where=" + where
+      //jsonp: "$jsonp",
+      //dataType: "jsonp"
     });
 
     var j = 0;
