@@ -130,7 +130,6 @@ var AddressBar = React.createClass({
     geoclient('address')(this.state.input).done(function (resp) {
       search(resp.bblBoroughCode, resp.bblTaxBlock, resp.bblTaxLot);
     });
-    return false;
   },
 
   render: function () {
@@ -222,14 +221,14 @@ var search = function (borough, block, lot) {
       /*jshint ignore:start*/
       var Table = Reactable.Table;
       var table = React.render(
-        <Table className="table" data={data} />,
+        <Table className="table" data={data} sortable={true}
+               filterable={["doc_type"]} />,
         document.getElementById('data')
       );
       /*jshint ignore:end*/
     });
 
   });
-  return false;
 };
 
 $(document).ready(function () {
