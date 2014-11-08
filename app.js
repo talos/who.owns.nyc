@@ -159,7 +159,8 @@ var search = function (borough, block, lot) {
   var dataUrl = "https://data.cityofnewyork.us/resource/",
       legalsResource = "8h5j-fqxa",
       masterResource = "bnx9-e6tj",
-      partiesResource = "636b-3b5g";
+      partiesResource = "636b-3b5g",
+      appToken = "$$app_token=UlQ1WIMp3NyhVF2Km0zveytPV";
 
   // Obtain property JSON
   $.ajax({
