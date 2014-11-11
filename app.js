@@ -66,13 +66,133 @@ var splitAddress = function (rawAddress, houseNumber, street, borough) {
   return retObj;
 };
 
-var AddressBar = React.createClass({
+var App = React.createClass({
 
   getInitialState: function () {
-    return {
-      input: this.props.input
+    return {};
+  },
+
+  render: function () {
+    /* jshint ignore:start */
+    return (
+      <div>
+        <NavBar mutate={this.mutate} />
+        <Results />
+      </div>
+    );
+    /* jshint ignore:end */
+  },
+
+  mutate: function (k, v) {
+    var obj = {};
+    obj[k] = v;
+    this.setState(obj);
+  }
+
+});
+
+var Results = React.createClass({
+
+  render: function () {
+
+    /* jshint ignore:start */
+    return (
+      <div>
+      </div>
+    );
+    /* jshint ignore:end */
+
+  }
+
+});
+
+var NavBar = React.createClass({
+
+  changeMode: function (mode) {
+    return function () {
+      this.props.mutate('mode', mode);
     };
   },
+
+  render: function () {
+    var mode = this.props.mode;
+    /* jshint ignore:start */
+    return (
+      <nav className="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div className="container">
+          <div className="navbar-header">
+            <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+              <span className="sr-only">Toggle navigation</span>
+              <span className="icon-bar"></span>
+              <span className="icon-bar"></span>
+              <span className="icon-bar"></span>
+            </button>
+            <a className="navbar-brand" href="#">
+              Who owns NYC?
+            </a>
+          </div>
+
+          <div className="collapse navbar-collapse" id="navbar-collapse">
+            <ul className="nav navbar-nav">
+              <li className="{mode == 'address' ? 'active': ''}">
+                <a href="#" onClick={this.changeMode('address')}>Address</a>
+              </li>
+              <li className="{mode == 'owner' ? 'active': ''}">
+                <a href="#" onClick={this.changeMode('owner')}>Owner</a>
+              </li>
+              <li className="{mode == 'bbl' ? 'active': ''}">
+                <a href="#" onClick={this.changeMode('bbl')}>BBL</a>
+              </li>
+              <li className="{mode != 'address' ? 'hidden': ''}">
+                <AddressBar mutate={this.props.mutate} input={{}}/>
+              </li>
+              <li className="{mode != 'owner' ? 'hidden': ''}">
+                <OwnerBar mutate={this.props.mutate} />
+              </li>
+              <li className="{mode != 'bbl' ? 'hidden': ''}">
+                <BBLBar mutate={this.props.mutate} />
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    );
+    /* jshint ignore:end */
+  }
+
+});
+
+var OwnerBar = React.createClass({
+
+  render: function () {
+
+    /* jshint ignore:start */
+    return (
+      <div>
+      </div>
+    );
+    /* jshint ignore:end */
+
+  }
+
+});
+
+var BBLBar = React.createClass({
+
+  render: function () {
+
+    /* jshint ignore:start */
+    return (
+      <div>
+      </div>
+    );
+    /* jshint ignore:end */
+
+  }
+
+});
+
+var AddressBar = React.createClass({
 
   onAddressChange: function (/*evt*/) {
     var rawAddress = this.refs.address.getDOMNode().value;
@@ -80,11 +200,11 @@ var AddressBar = React.createClass({
   },
 
   onInputChange: function (newInput) {
-    this.setState({input: newInput});
+    this.props.mutate('address', newInput);
   },
 
   address: function () {
-    var input = this.state.input;
+    var input = this.props.input;
     var address = '';
     var trailingChar = '';
     if (this.refs.address) {
@@ -115,7 +235,7 @@ var AddressBar = React.createClass({
   },
 
   validate: function () {
-    var input = this.state.input;
+    var input = this.props.input;
     if (!input.houseNumber) {
       return "Missing house number.";
     } else if (!input.street) {
@@ -127,7 +247,7 @@ var AddressBar = React.createClass({
 
   onSubmit: function (evt) {
     evt.preventDefault();
-    geoclient('address')(this.state.input).done(function (resp) {
+    geoclient('address')(this.props.input).done(function (resp) {
       search(resp.bblBoroughCode, resp.bblTaxBlock, resp.bblTaxLot);
     });
   },
@@ -234,8 +354,8 @@ var search = function (borough, block, lot) {
 $(document).ready(function () {
   /*jshint ignore:start*/
   React.render(
-    <AddressBar input={{}} />,
-    document.getElementById('form')
+    <App input={{}} />,
+    document.getElementById('app')
   );
   /*jshint ignore:end*/
 });
