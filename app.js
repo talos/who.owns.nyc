@@ -69,24 +69,52 @@ var splitAddress = function (rawAddress, houseNumber, street, borough) {
 var App = React.createClass({
 
   getInitialState: function () {
-    return {};
+    return {
+      mode: 'address',
+      input: {
+        address: {
+          houseNumber: '993',
+          street: 'Carroll St',
+          borough: 'Brooklyn'
+        },
+        bbl: {
+          borough: '3',
+          block: '1772',
+          lot: '74'
+        },
+        owner: {
+          name: 'G-Way'
+        }
+      },
+      data: []
+    };
   },
 
   render: function () {
     /* jshint ignore:start */
     return (
       <div>
-        <NavBar mutate={this.mutate} />
-        <Results />
+        <NavBar setMode={this.setMode} setInput={this.setInput}
+                mode={this.state.mode} input={this.state.input}
+                setData={this.setData} />
+        <Results data={this.state.data} />
       </div>
     );
     /* jshint ignore:end */
   },
 
-  mutate: function (k, v) {
-    var obj = {};
-    obj[k] = v;
+  setMode: function (newMode) {
+    this.setState({mode: newMode});
+  },
+
+  setInput: function (newInput) {
+    var obj = {input: this.state.input};
+    obj.input[this.state.mode] = newInput;
     this.setState(obj);
+  },
+
+  setData: function (newData) {
+    this.setState({data: newData});
   }
 
 });
@@ -97,8 +125,11 @@ var Results = React.createClass({
 
     /* jshint ignore:start */
     return (
-      <div>
-      </div>
+      <Reactable.Table className="table" data={this.props.data}
+             columns={["doc_type", "document_date", "document_amt", "party1.name", "party1.addr1", "party1.addr2", "party1.state", "party1.city", "party1.country", "party1.zip", "party2.name", "party2.addr1", "party2.addr2", "party2.city", "party2.country", "party2.zip"]}
+             defaultSort={'recorded_datetime'}
+             sortable={[ 'recorded_datetime', 'document_date']}
+             filterable={["doc_type"]} />
     );
     /* jshint ignore:end */
 
@@ -108,17 +139,27 @@ var Results = React.createClass({
 
 var NavBar = React.createClass({
 
-  changeMode: function (mode) {
-    return function () {
-      this.props.mutate('mode', mode);
+  setMode: function (mode) {
+    var self = this;
+    return function (evt) {
+      self.props.setMode(mode);
     };
+  },
+
+  setInput: function (newInput) {
+    this.props.setInput(newInput);
+  },
+
+  onSubmit: function (evt) {
+    evt.preventDefault();
+    this.refs[this.props.mode].submit(evt);
   },
 
   render: function () {
     var mode = this.props.mode;
     /* jshint ignore:start */
     return (
-      <nav className="navbar navbar-default navbar-fixed-top" role="navigation">
+      <nav className="navbar navbar-default" role="navigation">
         <div className="container">
           <div className="navbar-header">
             <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
@@ -132,28 +173,39 @@ var NavBar = React.createClass({
             </a>
           </div>
 
-          <div className="collapse navbar-collapse" id="navbar-collapse">
-            <ul className="nav navbar-nav">
-              <li className="{mode == 'address' ? 'active': ''}">
-                <a href="#" onClick={this.changeMode('address')}>Address</a>
-              </li>
-              <li className="{mode == 'owner' ? 'active': ''}">
-                <a href="#" onClick={this.changeMode('owner')}>Owner</a>
-              </li>
-              <li className="{mode == 'bbl' ? 'active': ''}">
-                <a href="#" onClick={this.changeMode('bbl')}>BBL</a>
-              </li>
-              <li className="{mode != 'address' ? 'hidden': ''}">
-                <AddressBar mutate={this.props.mutate} input={{}}/>
-              </li>
-              <li className="{mode != 'owner' ? 'hidden': ''}">
-                <OwnerBar mutate={this.props.mutate} />
-              </li>
-              <li className="{mode != 'bbl' ? 'hidden': ''}">
-                <BBLBar mutate={this.props.mutate} />
-              </li>
-            </ul>
-          </div>
+          <form ref="form" onSubmit={this.onSubmit}>
+            <div className="collapse navbar-collapse" id="navbar-collapse">
+              <ul className="nav navbar-nav">
+                <li className={mode == 'address' ? 'active': ''}>
+                  <a href="#" onClick={this.setMode('address')}>Address</a>
+                </li>
+                <li className={mode == 'owner' ? 'active': ''}>
+                  <a href="#" onClick={this.setMode('owner')}>Owner</a>
+                </li>
+                <li className={mode == 'bbl' ? 'active': ''}>
+                  <a href="#" onClick={this.setMode('bbl')}>BBL</a>
+                </li>
+                <li className={mode != 'address' ? 'hidden': ''}>
+                  <AddressBar ref='address' setInput={this.setInput}
+                              address={this.props.input.address}
+                              setData={this.props.setData} />
+                </li>
+                <li className={mode != 'owner' ? 'hidden': ''}>
+                  <OwnerBar ref='owner' setInput={this.setInput}
+                            owner={this.props.input.owner}
+                            setData={this.props.setData} />
+                </li>
+                <li className={mode != 'bbl' ? 'hidden': ''}>
+                  <BBLBar ref='bbl' setInput={this.setInput}
+                          bbl={this.props.input.bbl}
+                          setData={this.props.setData} />
+                </li>
+                <li>
+                  <button type="submit" id="submit">Submit</button>
+                </li>
+              </ul>
+            </div>
+          </form>
         </div>
       </nav>
     );
@@ -179,11 +231,86 @@ var OwnerBar = React.createClass({
 
 var BBLBar = React.createClass({
 
+  validateBlock: function () {
+    var block = this.props.bbl.block;
+    block = Number(block);
+    if (isNaN(block)) {
+      return "Block must be a number";
+    } else if (Math.floor(block) !== block) {
+      return "Block must be an integer";
+    } else if (block < 0) {
+      return "Block must be positive";
+    } else if (block > 99999) {
+      return "Block must be less than 100000";
+    }
+  },
+
+  validateLot: function () {
+    var lot = this.props.bbl.lot;
+    lot = Number(lot);
+    if (isNaN(lot)) {
+      return "Lot must be a number";
+    } else if (Math.floor(lot) !== lot) {
+      return "Lot must be an integer";
+    } else if (lot < 0) {
+      return "Lot must be positive";
+    } else if (lot > 9999) {
+      return "Lot must be less than 10000";
+    }
+  },
+
+  onChange: function (evt) {
+    var $target = $(evt.target),
+        name = $target.attr('name'),
+        val = $target.val();
+    var obj = this.props.bbl;
+    obj[name] = val;
+    this.props.setInput(obj);
+  },
+
+  submit: function () {
+    var self = this;
+    search(this.props.bbl.borough,
+           this.props.bbl.block,
+           this.props.bbl.lot).done(function (data) {
+             self.props.setData(data);
+           });
+  },
+
   render: function () {
 
     /* jshint ignore:start */
     return (
       <div>
+        <select name="borough"
+               className="form-control"
+               ref="borough"
+               value={this.props.bbl.borough}
+               onChange={this.onChange}>
+          <option value="2">Bronx</option>
+          <option value="3">Brooklyn</option>
+          <option value="1">Manhattan</option>
+          <option value="4">Queens</option>
+          <option value="5">Staten Island</option>
+        </select>
+        <div className="hint--bottom"
+             data-hint={this.validateBlock()}>
+          <input name="block"
+                 className="form-control"
+                 ref="address"
+                 placeholder="Block"
+                 value={this.props.bbl.block}
+                 onChange={this.onChange} />
+        </div>
+        <div className="hint--bottom"
+             data-hint={this.validateLot()}>
+          <input name="borough"
+                 className="form-control"
+                 ref="address"
+                 placeholder="Lot"
+                 value={this.props.bbl.lot}
+                 onChange={this.onChange} />
+        </div>
       </div>
     );
     /* jshint ignore:end */
@@ -194,17 +321,17 @@ var BBLBar = React.createClass({
 
 var AddressBar = React.createClass({
 
-  onAddressChange: function (/*evt*/) {
+  onAddressChange: function (evt) {
     var rawAddress = this.refs.address.getDOMNode().value;
     this.onInputChange(splitAddress(rawAddress));
   },
 
   onInputChange: function (newInput) {
-    this.props.mutate('address', newInput);
+    this.props.setInput(newInput);
   },
 
   address: function () {
-    var input = this.props.input;
+    var input = this.props.address;
     var address = '';
     var trailingChar = '';
     if (this.refs.address) {
@@ -235,7 +362,7 @@ var AddressBar = React.createClass({
   },
 
   validate: function () {
-    var input = this.props.input;
+    var input = this.props.address;
     if (!input.houseNumber) {
       return "Missing house number.";
     } else if (!input.street) {
@@ -245,28 +372,29 @@ var AddressBar = React.createClass({
     }
   },
 
-  onSubmit: function (evt) {
-    evt.preventDefault();
-    geoclient('address')(this.props.input).done(function (resp) {
-      search(resp.bblBoroughCode, resp.bblTaxBlock, resp.bblTaxLot);
+  submit: function () {
+    var self = this;
+    geoclient('address')(this.props.address).done(function (resp) {
+      search(resp.bblBoroughCode,
+             resp.bblTaxBlock,
+             resp.bblTaxLot).done(function (data) {
+        self.props.setData(data);
+      });
     });
   },
 
   render: function () {
     /* jshint ignore:start */
     return (
-      <form ref="form" onSubmit={this.onSubmit}>
-        <div className="hint--bottom"
-             data-hint={this.validate()}>
-          <input name="address"
-                 className="form-control"
-                 ref="address"
-                 placeholder="Address"
-                 value={this.address()}
-                 onChange={this.onAddressChange} />
-          <button type="submit" id="submit">Submit</button>
-        </div>
-      </form>
+      <div className="hint--bottom"
+           data-hint={this.validate()}>
+        <input name="address"
+               className="form-control"
+               ref="address"
+               placeholder="Address"
+               value={this.address()}
+               onChange={this.onAddressChange} />
+      </div>
     );
     /* jshint ignore:end */
   }
@@ -279,7 +407,8 @@ var search = function (borough, block, lot) {
       legalsResource = "8h5j-fqxa",
       masterResource = "bnx9-e6tj",
       partiesResource = "636b-3b5g",
-      appToken = ".json?$$app_token=UlQ1WIMp3NyhVF2Km0zveytPV";
+      appToken = ".json?$$app_token=UlQ1WIMp3NyhVF2Km0zveytPV",
+      $dfd = new $.Deferred();
 
   // Obtain property JSON
   $.ajax({
@@ -338,23 +467,16 @@ var search = function (borough, block, lot) {
           }
         }
       }
-      /*jshint ignore:start*/
-      var Table = Reactable.Table;
-      var table = React.render(
-        <Table className="table" data={data} defaultSort={'recorded_datetime'}
-        sortable={[ 'recorded_datetime', 'document_date']} filterable={["doc_type"]} />,
-        document.getElementById('data')
-      );
-      /*jshint ignore:end*/
+      $dfd.resolve(data);
     });
-
   });
+  return $dfd.promise();
 };
 
 $(document).ready(function () {
   /*jshint ignore:start*/
   React.render(
-    <App input={{}} />,
+    <App />,
     document.getElementById('app')
   );
   /*jshint ignore:end*/
