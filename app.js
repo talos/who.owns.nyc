@@ -126,11 +126,19 @@ var Results = React.createClass({
     /* jshint ignore:start */
     return (
       <Reactable.Table className="table" data={this.props.data}
-             columns={["doc_type", "document_date", "document_amt", "party1.name", "party1.addr1", "party1.addr2", "party1.state", "party1.city", "party1.country", "party1.zip", "party2.name", "party2.addr1", "party2.addr2", "party2.city", "party2.country", "party2.zip"]}
              defaultSort={'recorded_datetime'}
              sortable={[ 'recorded_datetime', 'document_date']}
-             filterable={["doc_type"]} />
+             columns={["doc_type", "document_date", "document_amt"]}
+             filterable={["doc_type"]}>
+        <Reactable.Tr>
+          <Reactable.Td column="doc_type" />
+          <Reactable.Td column="document_date" />
+          <Reactable.Td column="document_amt" />
+          <Reactable.Td column="party1.name" />
+        </Reactable.Tr>
+      </Reactable.Table>
     );
+   //columns={["doc_type", "document_date", "document_amt", "party1.name", "party1.addr1", "party1.addr2", "party1.state", "party1.city", "party1.country", "party1.zip", "party2.name", "party2.addr1", "party2.addr2", "party2.city", "party2.country", "party2.zip"]}
     /* jshint ignore:end */
 
   }
