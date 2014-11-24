@@ -73,17 +73,18 @@ var App = React.createClass({
       mode: 'address',
       input: {
         address: {
-          houseNumber: '993',
-          street: 'Carroll St',
-          borough: 'Brooklyn'
+          houseNumber: '',
+          street: '',
+          borough: ''
         },
         bbl: {
-          borough: '3',
-          block: '1772',
-          lot: '74'
+          borough: '',
+          block: '',
+          lot: ''
         },
         owner: {
-          name: 'G-Way'
+          name: '',
+          address: ''
         }
       },
       data: []
@@ -113,7 +114,17 @@ var App = React.createClass({
     this.setState(obj);
   },
 
+  /**
+   * Clear inputs in other sections in prep for placing in BBL/Owner info
+   */
+  clearInput: function () {
+    var obj = {input: {}};
+    obj.input[this.state.mode] = this.state.input[this.state.mode];
+    this.setState(obj);
+  },
+
   setData: function (newData) {
+    //this.clearInput();
     this.setState({data: newData});
   }
 
@@ -128,17 +139,10 @@ var Results = React.createClass({
       <Reactable.Table className="table" data={this.props.data}
              defaultSort={'recorded_datetime'}
              sortable={[ 'recorded_datetime', 'document_date']}
-             columns={["doc_type", "document_date", "document_amt"]}
+             columns={["doc_type", "document_date", "document_amt", "party1.name", "party1.addr1", "party1.addr2", "party1.state", "party1.city", "party1.country", "party1.zip", "party2.name", "party2.addr1", "party2.addr2", "party2.city", "party2.country", "party2.zip"]}
              filterable={["doc_type"]}>
-        <Reactable.Tr>
-          <Reactable.Td column="doc_type" />
-          <Reactable.Td column="document_date" />
-          <Reactable.Td column="document_amt" />
-          <Reactable.Td column="party1.name" />
-        </Reactable.Tr>
       </Reactable.Table>
     );
-   //columns={["doc_type", "document_date", "document_amt", "party1.name", "party1.addr1", "party1.addr2", "party1.state", "party1.city", "party1.country", "party1.zip", "party2.name", "party2.addr1", "party2.addr2", "party2.city", "party2.country", "party2.zip"]}
     /* jshint ignore:end */
 
   }
@@ -305,16 +309,16 @@ var BBLBar = React.createClass({
              data-hint={this.validateBlock()}>
           <input name="block"
                  className="form-control"
-                 ref="address"
+                 ref="block"
                  placeholder="Block"
                  value={this.props.bbl.block}
                  onChange={this.onChange} />
         </div>
         <div className="hint--bottom"
              data-hint={this.validateLot()}>
-          <input name="borough"
+          <input name="lot"
                  className="form-control"
-                 ref="address"
+                 ref="lot"
                  placeholder="Lot"
                  value={this.props.bbl.lot}
                  onChange={this.onChange} />
