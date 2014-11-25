@@ -1,7 +1,7 @@
 /** @jsx React.DOM */
 /*jslint plusplus:true, camelcase:false, strict:false, browser:true,
  maxstatements:40, maxdepth:10, unused:false*/
-/*globals $, React*/
+/*globals $, React, History*/
 
 (function () {
 "use strict";
@@ -67,65 +67,46 @@ var splitAddress = function (rawAddress, houseNumber, street, borough) {
 };
 
 var App = React.createClass({
+  mixins: [ReactRouter.State, ReactRouter.Navigation],
 
   getInitialState: function () {
-    return {
-      mode: 'address',
-      input: {
-        address: {
-          houseNumber: '',
-          street: '',
-          borough: ''
-        },
-        bbl: {
-          borough: '',
-          block: '',
-          lot: ''
-        },
-        owner: {
-          name: '',
-          address: ''
-        }
-      },
-      data: []
+    var state = {
+      data: [],
+      input: {}
     };
-  },
-
-  render: function () {
-    /* jshint ignore:start */
-    return (
-      <div>
-        <NavBar setMode={this.setMode} setInput={this.setInput}
-                mode={this.state.mode} input={this.state.input}
-                setData={this.setData} />
-        <Results data={this.state.data} />
-      </div>
-    );
-    /* jshint ignore:end */
-  },
-
-  setMode: function (newMode) {
-    this.setState({mode: newMode});
-  },
-
-  setInput: function (newInput) {
-    var obj = {input: this.state.input};
-    obj.input[this.state.mode] = newInput;
-    this.setState(obj);
-  },
-
-  /**
-   * Clear inputs in other sections in prep for placing in BBL/Owner info
-   */
-  clearInput: function () {
-    var obj = {input: {}};
-    obj.input[this.state.mode] = this.state.input[this.state.mode];
-    this.setState(obj);
+    var activeRoute = this.getRoutes()[1];
+    if (activeRoute) {
+      state.mode = activeRoute.name;
+      state.input[state.mode] = this.getParams();
+    }
+    return state;
   },
 
   setData: function (newData) {
     //this.clearInput();
     this.setState({data: newData});
+  },
+
+  setInput: function (newInput) {
+    var input = this.state.input;
+    input[this.state.mode] = newInput;
+    this.setState(input);
+  },
+
+  submit: function () {
+    this.transitionTo(this.state.mode + 'goto', this.state.input[this.state.mode]);
+  },
+
+  render: function () {
+    return (
+      <div>
+      <NavBar submit={this.submit}
+              setData={this.setData}
+              input={this.state.input[this.state.mode]}
+              setInput={this.setInput} />
+        <Results data={this.state.data} />
+      </div>
+    );
   }
 
 });
@@ -134,7 +115,6 @@ var Results = React.createClass({
 
   render: function () {
 
-    /* jshint ignore:start */
     return (
       <Reactable.Table className="table" data={this.props.data}
              defaultSort={'recorded_datetime'}
@@ -143,7 +123,6 @@ var Results = React.createClass({
              filterable={["doc_type"]}>
       </Reactable.Table>
     );
-    /* jshint ignore:end */
 
   }
 
@@ -151,25 +130,13 @@ var Results = React.createClass({
 
 var NavBar = React.createClass({
 
-  setMode: function (mode) {
-    var self = this;
-    return function (evt) {
-      self.props.setMode(mode);
-    };
-  },
-
-  setInput: function (newInput) {
-    this.props.setInput(newInput);
-  },
-
   onSubmit: function (evt) {
     evt.preventDefault();
-    this.refs[this.props.mode].submit(evt);
+    this.props.submit();
   },
 
   render: function () {
     var mode = this.props.mode;
-    /* jshint ignore:start */
     return (
       <nav className="navbar navbar-default" role="navigation">
         <div className="container">
@@ -189,29 +156,17 @@ var NavBar = React.createClass({
             <div className="collapse navbar-collapse" id="navbar-collapse">
               <ul className="nav navbar-nav">
                 <li className={mode == 'address' ? 'active': ''}>
-                  <a href="#" onClick={this.setMode('address')}>Address</a>
+                  <ReactRouter.Link to='address'>Address</ReactRouter.Link>
                 </li>
                 <li className={mode == 'owner' ? 'active': ''}>
-                  <a href="#" onClick={this.setMode('owner')}>Owner</a>
+                  <ReactRouter.Link to='owner'>Owner</ReactRouter.Link>
                 </li>
                 <li className={mode == 'bbl' ? 'active': ''}>
-                  <a href="#" onClick={this.setMode('bbl')}>BBL</a>
+                  <ReactRouter.Link to='bbl'>BBL</ReactRouter.Link>
                 </li>
-                <li className={mode != 'address' ? 'hidden': ''}>
-                  <AddressBar ref='address' setInput={this.setInput}
-                              address={this.props.input.address}
-                              setData={this.props.setData} />
-                </li>
-                <li className={mode != 'owner' ? 'hidden': ''}>
-                  <OwnerBar ref='owner' setInput={this.setInput}
-                            owner={this.props.input.owner}
-                            setData={this.props.setData} />
-                </li>
-                <li className={mode != 'bbl' ? 'hidden': ''}>
-                  <BBLBar ref='bbl' setInput={this.setInput}
-                          bbl={this.props.input.bbl}
-                          setData={this.props.setData} />
-                </li>
+                <ReactRouter.RouteHandler
+                      input={this.props.input}
+                      setInput={this.props.setInput} />
                 <li>
                   <button type="submit" id="submit">Submit</button>
                 </li>
@@ -221,21 +176,18 @@ var NavBar = React.createClass({
         </div>
       </nav>
     );
-    /* jshint ignore:end */
   }
-
 });
 
 var OwnerBar = React.createClass({
 
   render: function () {
 
-    /* jshint ignore:start */
     return (
       <div>
+        owner
       </div>
     );
-    /* jshint ignore:end */
 
   }
 
@@ -244,7 +196,7 @@ var OwnerBar = React.createClass({
 var BBLBar = React.createClass({
 
   validateBlock: function () {
-    var block = this.props.bbl.block;
+    var block = this.props.input.block;
     block = Number(block);
     if (isNaN(block)) {
       return "Block must be a number";
@@ -258,7 +210,7 @@ var BBLBar = React.createClass({
   },
 
   validateLot: function () {
-    var lot = this.props.bbl.lot;
+    var lot = this.props.input.lot;
     lot = Number(lot);
     if (isNaN(lot)) {
       return "Lot must be a number";
@@ -275,29 +227,18 @@ var BBLBar = React.createClass({
     var $target = $(evt.target),
         name = $target.attr('name'),
         val = $target.val();
-    var obj = this.props.bbl;
+    var obj = this.props.input;
     obj[name] = val;
     this.props.setInput(obj);
   },
 
-  submit: function () {
-    var self = this;
-    search(this.props.bbl.borough,
-           this.props.bbl.block,
-           this.props.bbl.lot).done(function (data) {
-             self.props.setData(data);
-           });
-  },
-
   render: function () {
-
-    /* jshint ignore:start */
     return (
       <div>
         <select name="borough"
                className="form-control"
                ref="borough"
-               value={this.props.bbl.borough}
+               value={this.props.input.borough}
                onChange={this.onChange}>
           <option value="2">Bronx</option>
           <option value="3">Brooklyn</option>
@@ -311,7 +252,7 @@ var BBLBar = React.createClass({
                  className="form-control"
                  ref="block"
                  placeholder="Block"
-                 value={this.props.bbl.block}
+                 value={this.props.input.block}
                  onChange={this.onChange} />
         </div>
         <div className="hint--bottom"
@@ -320,13 +261,11 @@ var BBLBar = React.createClass({
                  className="form-control"
                  ref="lot"
                  placeholder="Lot"
-                 value={this.props.bbl.lot}
+                 value={this.props.input.lot}
                  onChange={this.onChange} />
         </div>
       </div>
     );
-    /* jshint ignore:end */
-
   }
 
 });
@@ -335,15 +274,11 @@ var AddressBar = React.createClass({
 
   onAddressChange: function (evt) {
     var rawAddress = this.refs.address.getDOMNode().value;
-    this.onInputChange(splitAddress(rawAddress));
-  },
-
-  onInputChange: function (newInput) {
-    this.props.setInput(newInput);
+    this.props.setInput(splitAddress(rawAddress));
   },
 
   address: function () {
-    var input = this.props.address;
+    var input = this.props.input;
     var address = '';
     var trailingChar = '';
     if (this.refs.address) {
@@ -374,7 +309,7 @@ var AddressBar = React.createClass({
   },
 
   validate: function () {
-    var input = this.props.address;
+    var input = this.props.input;
     if (!input.houseNumber) {
       return "Missing house number.";
     } else if (!input.street) {
@@ -384,7 +319,7 @@ var AddressBar = React.createClass({
     }
   },
 
-  submit: function () {
+  /*submit: function () {
     var self = this;
     geoclient('address')(this.props.address).done(function (resp) {
       search(resp.bblBoroughCode,
@@ -393,10 +328,9 @@ var AddressBar = React.createClass({
         self.props.setData(data);
       });
     });
-  },
+    },*/
 
   render: function () {
-    /* jshint ignore:start */
     return (
       <div className="hint--bottom"
            data-hint={this.validate()}>
@@ -408,7 +342,6 @@ var AddressBar = React.createClass({
                onChange={this.onAddressChange} />
       </div>
     );
-    /* jshint ignore:end */
   }
 
 });
@@ -485,13 +418,44 @@ var search = function (borough, block, lot) {
   return $dfd.promise();
 };
 
-$(document).ready(function () {
-  /*jshint ignore:start*/
-  React.render(
-    <App />,
-    document.getElementById('app')
-  );
-  /*jshint ignore:end*/
+var NotFound = React.createClass({
+
+  render: function () {
+    return (
+      <div>Not found</div>
+    );
+  }
 });
+
+$(document).ready(function () {
+  var routes = (
+    <ReactRouter.Route name="index" path="/" handler={App}>
+      <ReactRouter.Route name="address" path="address" handler={AddressBar}>
+        <ReactRouter.Route name="addressgoto" path=":address" handler={AddressBar} />
+      </ReactRouter.Route>
+      <ReactRouter.Route name="owner" path="owner" handler={OwnerBar}>
+        <ReactRouter.Route name="ownergoto" path=":owner" handler={OwnerBar} />
+      </ReactRouter.Route>
+      <ReactRouter.Route name="bbl" path="bbl" handler={BBLBar}>
+        <ReactRouter.Route name="bblgoto" path=":borough/:block/:lot" handler={BBLBar} />
+      </ReactRouter.Route>
+      <ReactRouter.NotFoundRoute handler={NotFound} />
+    </ReactRouter.Route>
+  );
+
+  ReactRouter.run(routes, ReactRouter.HistoryLocation, function (Handler) {
+    React.render(<Handler />, document.body);
+  });
+});
+
+// $(document).ready(function () {
+//   History.Adapter.bind(window, 'statechange', function () {
+//     var State = History.getState();
+//   });
+//   React.render(
+//     <App />,
+//     document.getElementById('app')
+//   );
+// });
 
 }());

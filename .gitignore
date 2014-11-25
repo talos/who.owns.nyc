@@ -6,3 +6,4 @@ who_owns_nyc/static/.webassets-cache/
 who_owns_nyc/static/stylesheets/
 who_owns_nyc/static/gen/
 .sass-cache
+bower_components
