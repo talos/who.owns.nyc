@@ -1,6 +1,6 @@
 /** @jsx React.DOM */
 /*jslint plusplus:true, camelcase:false, strict:false, browser:true,
- maxstatements:40, maxdepth:10, unused:false*/
+ maxstatements:40, maxdepth:10*/
 /*globals $, React, History*/
 
 (function () {
@@ -36,6 +36,7 @@ var geoclient = function (endpoint) {
  * set.
  */
 var splitAddress = function (rawAddress, houseNumber, street, borough) {
+  rawAddress = rawAddress || '';
   var retObj = {};
 
   // Assume anything after the first comma is a borough -- kill beyond
@@ -72,13 +73,9 @@ var App = React.createClass({
   getInitialState: function () {
     var state = {
       data: [],
-      input: {}
+      input: {
+      }
     };
-    var activeRoute = this.getRoutes()[1];
-    if (activeRoute) {
-      state.mode = activeRoute.name;
-      state.input[state.mode] = this.getParams();
-    }
     return state;
   },
 
@@ -88,21 +85,23 @@ var App = React.createClass({
   },
 
   setInput: function (newInput) {
-    var input = this.state.input;
-    input[this.state.mode] = newInput;
-    this.setState(input);
+    var obj = { input: this.state.input };
+    $.extend(obj.input, newInput);
+    this.setState(obj);
   },
 
   submit: function () {
-    this.transitionTo(this.state.mode + 'goto', this.state.input[this.state.mode]);
+    this.transitionTo(this.props.mode, this.state.input);
   },
 
   render: function () {
     return (
       <div>
-      <NavBar submit={this.submit}
+      <NavBar ref='navbar'
+              submit={this.submit}
               setData={this.setData}
-              input={this.state.input[this.state.mode]}
+              mode={this.props.mode}
+              input={this.state.input}
               setInput={this.setInput} />
         <Results data={this.state.data} />
       </div>
@@ -132,7 +131,9 @@ var NavBar = React.createClass({
 
   onSubmit: function (evt) {
     evt.preventDefault();
-    this.props.submit();
+    if (this.refs.inputbar._renderedComponent.validate() === true) {
+      this.props.submit();
+    }
   },
 
   render: function () {
@@ -156,15 +157,16 @@ var NavBar = React.createClass({
             <div className="collapse navbar-collapse" id="navbar-collapse">
               <ul className="nav navbar-nav">
                 <li className={mode == 'address' ? 'active': ''}>
-                  <ReactRouter.Link to='address'>Address</ReactRouter.Link>
+                  <ReactRouter.Link to='address' params={this.props.input}>Address</ReactRouter.Link>
                 </li>
                 <li className={mode == 'owner' ? 'active': ''}>
-                  <ReactRouter.Link to='owner'>Owner</ReactRouter.Link>
+                  <ReactRouter.Link to='owner' params={this.props.input}>Owner</ReactRouter.Link>
                 </li>
                 <li className={mode == 'bbl' ? 'active': ''}>
-                  <ReactRouter.Link to='bbl'>BBL</ReactRouter.Link>
+                  <ReactRouter.Link to='bbl' params={this.props.input}>BBL</ReactRouter.Link>
                 </li>
                 <ReactRouter.RouteHandler
+                      ref='inputbar'
                       input={this.props.input}
                       setInput={this.props.setInput} />
                 <li>
@@ -207,6 +209,7 @@ var BBLBar = React.createClass({
     } else if (block > 99999) {
       return "Block must be less than 100000";
     }
+    return true;
   },
 
   validateLot: function () {
@@ -220,6 +223,20 @@ var BBLBar = React.createClass({
       return "Lot must be positive";
     } else if (lot > 9999) {
       return "Lot must be less than 10000";
+    }
+    return true;
+  },
+
+  validate: function() {
+    var lotValid = this.validateLot(),
+        blockValid = this.validateBlock();
+
+    if (lotValid !== true) {
+      return lotValid;
+    } else if (blockValid !== true) {
+      return blockValid;
+    } else{
+      return true;
     }
   },
 
@@ -240,6 +257,7 @@ var BBLBar = React.createClass({
                ref="borough"
                value={this.props.input.borough}
                onChange={this.onChange}>
+          <option value="">Select a borough</option>
           <option value="2">Bronx</option>
           <option value="3">Brooklyn</option>
           <option value="1">Manhattan</option>
@@ -274,10 +292,10 @@ var AddressBar = React.createClass({
 
   onAddressChange: function (evt) {
     var rawAddress = this.refs.address.getDOMNode().value;
-    this.props.setInput(splitAddress(rawAddress));
+    this.props.setInput({address: rawAddress});
   },
 
-  address: function () {
+  /*address: function () {
     var input = this.props.input;
     var address = '';
     var trailingChar = '';
@@ -306,17 +324,19 @@ var AddressBar = React.createClass({
       }
     }
     return address;
-  },
+  },*/
 
   validate: function () {
-    var input = this.props.input;
-    if (!input.houseNumber) {
+    //var input = this.props.input;
+    var split = splitAddress(this.props.input.address);
+    if (!split.houseNumber) {
       return "Missing house number.";
-    } else if (!input.street) {
+    } else if (!split.street) {
       return "Missing street name.";
-    } else if (!input.borough) {
+    } else if (!split.borough) {
       return "Missing borough.";
     }
+    return true;
   },
 
   /*submit: function () {
@@ -338,7 +358,7 @@ var AddressBar = React.createClass({
                className="form-control"
                ref="address"
                placeholder="Address"
-               value={this.address()}
+               value={this.props.input.address}
                onChange={this.onAddressChange} />
       </div>
     );
@@ -430,21 +450,20 @@ var NotFound = React.createClass({
 $(document).ready(function () {
   var routes = (
     <ReactRouter.Route name="index" path="/" handler={App}>
-      <ReactRouter.Route name="address" path="address" handler={AddressBar}>
-        <ReactRouter.Route name="addressgoto" path=":address" handler={AddressBar} />
-      </ReactRouter.Route>
-      <ReactRouter.Route name="owner" path="owner" handler={OwnerBar}>
-        <ReactRouter.Route name="ownergoto" path=":owner" handler={OwnerBar} />
-      </ReactRouter.Route>
-      <ReactRouter.Route name="bbl" path="bbl" handler={BBLBar}>
-        <ReactRouter.Route name="bblgoto" path=":borough/:block/:lot" handler={BBLBar} />
-      </ReactRouter.Route>
+      <ReactRouter.Route name="address" path="address/?:address?" handler={AddressBar} />
+      <ReactRouter.Route name="owner" path="owner/?:owner?" handler={OwnerBar} />
+      <ReactRouter.Route name="bbl" path="bbl/?:borough?/?:block?/?:lot?" handler={BBLBar} />
       <ReactRouter.NotFoundRoute handler={NotFound} />
     </ReactRouter.Route>
   );
 
-  ReactRouter.run(routes, ReactRouter.HistoryLocation, function (Handler) {
-    React.render(<Handler />, document.body);
+  ReactRouter.run(routes, ReactRouter.HistoryLocation, function (Handler, state) {
+    var activeRoute = state.routes[1], mode;
+
+    if (activeRoute) {
+      mode = activeRoute.name;
+    }
+    React.render(<Handler mode={mode} />, document.body);
   });
 });
 
