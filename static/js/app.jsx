@@ -72,15 +72,9 @@ var App = React.createClass({
 
   getInitialState: function () {
     var state = {
-      data: [],
       input: this.props.input
     };
     return state;
-  },
-
-  setData: function (newData) {
-    //this.clearInput();
-    this.setState({data: newData});
   },
 
   setInput: function (newInput) {
@@ -98,11 +92,10 @@ var App = React.createClass({
       <div>
       <NavBar ref='navbar'
               submit={this.submit}
-              setData={this.setData}
               mode={this.props.mode}
               input={this.state.input}
               setInput={this.setInput} />
-        <Results data={this.state.data} />
+        <Results data={this.props.data} />
       </div>
     );
   }
@@ -167,7 +160,6 @@ var NavBar = React.createClass({
                 <ReactRouter.RouteHandler
                       ref='inputbar'
                       input={this.props.input}
-                      setData={this.props.setData}
                       setInput={this.props.setInput} />
                 <li>
                   <button type="submit" id="submit">Submit</button>
@@ -285,20 +277,6 @@ var BBLBar = React.createClass({
 });
 
 var AddressBar = React.createClass({
-
-  componentWillMount: function () {
-    var self = this;
-    if (typeof this.validate() === 'undefined') {
-      var split = splitAddress(this.props.input.address);
-      geoclient('address')(split).done(function (resp) {
-        search(resp.bblBoroughCode,
-               resp.bblTaxBlock,
-               resp.bblTaxLot).done(function (data) {
-          self.props.setData(data);
-        });
-      });
-    }
-  },
 
   onAddressChange: function (evt) {
     var rawAddress = this.refs.address.getDOMNode().value;
@@ -467,6 +445,19 @@ $(document).ready(function () {
       mode = activeRoute.name;
       input = state.params;
     }
+
+    if (mode === 'address') {
+      var split = splitAddress(input.address);
+      geoclient('address')(split).done(function (resp) {
+        search(resp.bblBoroughCode,
+               resp.bblTaxBlock,
+               resp.bblTaxLot).done(function (data) {
+          React.render(<Handler mode={mode} input={input} data={data} />,
+                       document.body);
+        });
+      });
+    }
+
     React.render(<Handler mode={mode} input={input} />, document.body);
   });
 });
