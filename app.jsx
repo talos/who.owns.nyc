@@ -73,8 +73,7 @@ var App = React.createClass({
   getInitialState: function () {
     var state = {
       data: [],
-      input: {
-      }
+      input: this.props.params
     };
     return state;
   },
@@ -131,7 +130,7 @@ var NavBar = React.createClass({
 
   onSubmit: function (evt) {
     evt.preventDefault();
-    if (this.refs.inputbar._renderedComponent.validate() === true) {
+    if (typeof this.refs.inputbar._renderedComponent.validate() === 'undefined') {
       this.props.submit();
     }
   },
@@ -209,7 +208,6 @@ var BBLBar = React.createClass({
     } else if (block > 99999) {
       return "Block must be less than 100000";
     }
-    return true;
   },
 
   validateLot: function () {
@@ -224,19 +222,16 @@ var BBLBar = React.createClass({
     } else if (lot > 9999) {
       return "Lot must be less than 10000";
     }
-    return true;
   },
 
   validate: function() {
     var lotValid = this.validateLot(),
         blockValid = this.validateBlock();
 
-    if (lotValid !== true) {
+    if (typeof lotValid !== 'undefined') {
       return lotValid;
-    } else if (blockValid !== true) {
+    } else if (typeof blockValid !== 'undefined') {
       return blockValid;
-    } else{
-      return true;
     }
   },
 
@@ -336,7 +331,6 @@ var AddressBar = React.createClass({
     } else if (!split.borough) {
       return "Missing borough.";
     }
-    return true;
   },
 
   /*submit: function () {
@@ -458,12 +452,15 @@ $(document).ready(function () {
   );
 
   ReactRouter.run(routes, ReactRouter.HistoryLocation, function (Handler, state) {
-    var activeRoute = state.routes[1], mode;
+    var activeRoute = state.routes[1],
+        mode,
+        params;
 
     if (activeRoute) {
       mode = activeRoute.name;
+      params = state.params;
     }
-    React.render(<Handler mode={mode} />, document.body);
+    React.render(<Handler mode={mode} params={params} />, document.body);
   });
 });
 
