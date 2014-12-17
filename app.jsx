@@ -73,7 +73,7 @@ var App = React.createClass({
   getInitialState: function () {
     var state = {
       data: [],
-      input: this.props.params
+      input: this.props.input
     };
     return state;
   },
@@ -167,6 +167,7 @@ var NavBar = React.createClass({
                 <ReactRouter.RouteHandler
                       ref='inputbar'
                       input={this.props.input}
+                      setData={this.props.setData}
                       setInput={this.props.setInput} />
                 <li>
                   <button type="submit" id="submit">Submit</button>
@@ -285,6 +286,20 @@ var BBLBar = React.createClass({
 
 var AddressBar = React.createClass({
 
+  componentWillMount: function () {
+    var self = this;
+    if (typeof this.validate() === 'undefined') {
+      var split = splitAddress(this.props.input.address);
+      geoclient('address')(split).done(function (resp) {
+        search(resp.bblBoroughCode,
+               resp.bblTaxBlock,
+               resp.bblTaxLot).done(function (data) {
+          self.props.setData(data);
+        });
+      });
+    }
+  },
+
   onAddressChange: function (evt) {
     var rawAddress = this.refs.address.getDOMNode().value;
     this.props.setInput({address: rawAddress});
@@ -334,14 +349,6 @@ var AddressBar = React.createClass({
   },
 
   /*submit: function () {
-    var self = this;
-    geoclient('address')(this.props.address).done(function (resp) {
-      search(resp.bblBoroughCode,
-             resp.bblTaxBlock,
-             resp.bblTaxLot).done(function (data) {
-        self.props.setData(data);
-      });
-    });
     },*/
 
   render: function () {
@@ -454,13 +461,13 @@ $(document).ready(function () {
   ReactRouter.run(routes, ReactRouter.HistoryLocation, function (Handler, state) {
     var activeRoute = state.routes[1],
         mode,
-        params;
+        input;
 
     if (activeRoute) {
       mode = activeRoute.name;
-      params = state.params;
+      input = state.params;
     }
-    React.render(<Handler mode={mode} params={params} />, document.body);
+    React.render(<Handler mode={mode} input={input} />, document.body);
   });
 });
 
