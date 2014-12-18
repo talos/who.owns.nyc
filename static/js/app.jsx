@@ -84,7 +84,11 @@ var App = React.createClass({
   },
 
   submit: function () {
-    this.transitionTo(this.props.mode, this.state.input);
+    var encodedInput = {};
+    for (var k in this.state.input) {
+      encodedInput[k] = encodeURIComponent(this.state.input[k]);
+    }
+    this.transitionTo(this.props.mode, encodedInput);
   },
 
   render: function () {
@@ -175,14 +179,36 @@ var NavBar = React.createClass({
 
 var OwnerBar = React.createClass({
 
-  render: function () {
+  onChange: function (evt) {
+    var $target = $(evt.target),
+        name = $target.attr('name'),
+        val = $target.val();
+    var obj = this.props.input;
+    obj[name] = val;
+    this.props.setInput(obj);
+  },
 
+  validate: function () {
+    return undefined;
+  },
+
+  render: function () {
     return (
       <div>
-        owner
+        <input name="name"
+               className="form-control"
+               ref="name"
+               placeholder="Name"
+               value={this.props.input.name}
+               onChange={this.onChange} />
+        <input name="address"
+               className="form-control"
+               ref="address"
+               placeholder="Address"
+               value={this.props.input.address}
+               onChange={this.onChange} />
       </div>
     );
-
   }
 
 });
@@ -283,37 +309,6 @@ var AddressBar = React.createClass({
     this.props.setInput({address: rawAddress});
   },
 
-  /*address: function () {
-    var input = this.props.input;
-    var address = '';
-    var trailingChar = '';
-    if (this.refs.address) {
-      trailingChar = this.refs.address.getDOMNode().value.slice(-1);
-      if (trailingChar !== ' ' && trailingChar !== ',') {
-        trailingChar = '';
-      }
-    }
-    if (typeof input.houseNumber !== 'undefined') {
-      address += input.houseNumber;
-    }
-    if (typeof input.street !== 'undefined') {
-      address += address === '' ? '' : ' ';
-      address += input.street;
-    }
-    if (typeof input.borough !== 'undefined') {
-      address += address === '' ? '' : ',';
-      if (input.borough !== '') {
-        address += ' ' + input.borough;
-      }
-    }
-    if (trailingChar !== '') {
-      if (trailingChar !== ',' || input.borough !== '') {
-        address = address.trim() + trailingChar;
-      }
-    }
-    return address;
-  },*/
-
   validate: function () {
     //var input = this.props.input;
     var split = splitAddress(this.props.input.address);
@@ -325,9 +320,6 @@ var AddressBar = React.createClass({
       return "Missing borough.";
     }
   },
-
-  /*submit: function () {
-    },*/
 
   render: function () {
     return (
@@ -345,77 +337,99 @@ var AddressBar = React.createClass({
 
 });
 
-
-var search = function (borough, block, lot) {
+var search = function (type) {
   var dataUrl = "https://data.cityofnewyork.us/resource/",
       legalsResource = "8h5j-fqxa",
       masterResource = "bnx9-e6tj",
       partiesResource = "636b-3b5g",
-      appToken = ".json?$$app_token=UlQ1WIMp3NyhVF2Km0zveytPV",
-      url = dataUrl + legalsResource + appToken + "&$where=borough=" +
-      borough + " and block=" + block + " and lot=" + lot,
-      $dfd = new $.Deferred();
+      appToken = ".json?$$app_token=UlQ1WIMp3NyhVF2Km0zveytPV";
 
-  // Obtain property JSON
-  var req = $.ajax({
-    url: url,
-    jsonp: "$jsonp",
-    dataType: "jsonp"
-  }).done(function(data) {
+  if (type == 'owner') {
+    return function (name, address) {
+      name = name || '';
+      address = address || '';
 
-    var where = [];
-    var i = 0;
-    for (i = 0; i < data.length; i++) {
-      where.push("document_id='" + data[i].document_id + "'");
-    }
+      var url = dataUrl + partiesResource + appToken + "&$where=name='" +
+            name.toUpperCase() + "' or addr1='" + address.toUpperCase() + "'",
+          $dfd = new $.Deferred();
 
-    where = where.join(' OR ');
+      $.ajax({
+        url: url,
+        jsonp: "$jsonp",
+        dataType: "jsonp"
+      }).done(function (data) {
+        $dfd.resolve(data);
+      });
 
-    var master = $.ajax({
-      url: dataUrl + masterResource + appToken + "&$where=" + where,
-      jsonp: "$jsonp",
-      dataType: "jsonp"
-    });
+      return $dfd;
+    };
+  } else if (type === 'bbl') {
+    return function (borough, block, lot) {
+      var url = dataUrl + legalsResource + appToken + "&$where=borough=" +
+          borough + " and block=" + block + " and lot=" + lot,
+          $dfd = new $.Deferred();
 
-    var parties = $.ajax({
-      url: dataUrl + partiesResource + appToken + "&$where=" + where,
-      jsonp: "$jsonp",
-      dataType: "jsonp"
-    });
+      // Obtain property JSON
+      $.ajax({
+        url: url,
+        jsonp: "$jsonp",
+        dataType: "jsonp"
+      }).done(function(data) {
 
-
-    var j = 0;
-    $.when(master, parties).done(function (masterResp, partiesResp) {
-      var masterData = masterResp[0],
-          partiesData = partiesResp[0],
-          k;
-      for (i = 0; i < masterData.length; i++) {
-        for (j = 0; j < data.length; j++) {
-          if (masterData[i].document_id === data[j].document_id) {
-            for (k in masterData[i]) {
-              data[j][k] = masterData[i][k];
-            }
-          }
+        var where = [];
+        var i = 0;
+        for (i = 0; i < data.length; i++) {
+          where.push("document_id='" + data[i].document_id + "'");
         }
-      }
-      for (i = 0; i < partiesData.length; i++) {
-        for (j = 0; j < data.length; j++) {
-          if (partiesData[i].document_id === data[j].document_id) {
-            for (k in partiesData[i]) {
-              var outK = 'party' + partiesData[i].party_type + '.' + k;
-              if (outK in data[j]) {
-                data[j][outK] += ', ' + partiesData[i][k];
-              } else {
-                data[j][outK] = partiesData[i][k];
+
+        where = where.join(' OR ');
+
+        var master = $.ajax({
+          url: dataUrl + masterResource + appToken + "&$where=" + where,
+          jsonp: "$jsonp",
+          dataType: "jsonp"
+        });
+
+        var parties = $.ajax({
+          url: dataUrl + partiesResource + appToken + "&$where=" + where,
+          jsonp: "$jsonp",
+          dataType: "jsonp"
+        });
+
+        var j = 0;
+        $.when(master, parties).done(function (masterResp, partiesResp) {
+          var masterData = masterResp[0],
+              partiesData = partiesResp[0],
+              k;
+          for (i = 0; i < masterData.length; i++) {
+            for (j = 0; j < data.length; j++) {
+              if (masterData[i].document_id === data[j].document_id) {
+                for (k in masterData[i]) {
+                  data[j][k] = masterData[i][k];
+                }
               }
             }
           }
-        }
-      }
-      $dfd.resolve(data);
-    });
-  });
-  return $dfd.promise();
+          for (i = 0; i < partiesData.length; i++) {
+            for (j = 0; j < data.length; j++) {
+              if (partiesData[i].document_id === data[j].document_id) {
+                for (k in partiesData[i]) {
+                  var outK = 'party' + partiesData[i].party_type + '.' + k;
+                  if (outK in data[j]) {
+                    data[j][outK] += ', ' + partiesData[i][k];
+                  } else {
+                    data[j][outK] = partiesData[i][k];
+                  }
+                }
+              }
+            }
+          }
+          $dfd.resolve(data);
+        });
+      });
+      return $dfd.promise();
+    };
+  }
 };
 
 var NotFound = React.createClass({
@@ -431,7 +445,7 @@ $(document).ready(function () {
   var routes = (
     <ReactRouter.Route name="index" path="/" handler={App}>
       <ReactRouter.Route name="address" path="address/?:address?" handler={AddressBar} />
-      <ReactRouter.Route name="owner" path="owner/?:owner?" handler={OwnerBar} />
+      <ReactRouter.Route name="owner" path="owner/?:name?/?:address?" handler={OwnerBar} />
       <ReactRouter.Route name="bbl" path="bbl/?:borough?/?:block?/?:lot?" handler={BBLBar} />
       <ReactRouter.NotFoundRoute handler={NotFound} />
     </ReactRouter.Route>
@@ -445,32 +459,42 @@ $(document).ready(function () {
     if (activeRoute) {
       mode = activeRoute.name;
       input = state.params;
+      for (var k in input) {
+        input[k] = decodeURIComponent(input[k]);
+      }
     }
 
+    // TODO break this out
     if (mode === 'address') {
       var split = splitAddress(input.address);
       geoclient('address')(split).done(function (resp) {
-        search(resp.bblBoroughCode,
-               resp.bblTaxBlock,
-               resp.bblTaxLot).done(function (data) {
+        search('bbl')(resp.bblBoroughCode,
+                      resp.bblTaxBlock,
+                      resp.bblTaxLot).done(function (data) {
           React.render(<Handler mode={mode} input={input} data={data} />,
                        document.body);
         });
       });
+    } else if (mode === 'bbl') {
+      if (input.borough && input.block && input.lot) {
+        search('bbl')(input.borough,
+                      input.block,
+                      input.lot).done(function (data) {
+          React.render(<Handler mode={mode} input={input} data={data} />,
+                       document.body);
+        });
+      }
+    } else if (mode === 'owner') {
+      if (input.name || input.address) {
+        search('owner')(input.name, input.address).done(function (data) {
+          React.render(<Handler mode={mode} input={input} data={data} />,
+                       document.body);
+        });
+      }
     }
 
     React.render(<Handler mode={mode} input={input} />, document.body);
   });
 });
-
-// $(document).ready(function () {
-//   History.Adapter.bind(window, 'statechange', function () {
-//     var State = History.getState();
-//   });
-//   React.render(
-//     <App />,
-//     document.getElementById('app')
-//   );
-// });
 
 }());
