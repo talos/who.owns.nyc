@@ -1,10 +1,14 @@
 /** @jsx React.DOM */
 /*jslint plusplus:true, camelcase:false, strict:false, browser:true,
  maxstatements:40, maxdepth:10*/
-/*globals $, React, History*/
+/*globals $, React, ReactRouter, Reactable*/
 
 (function () {
 "use strict";
+
+var isUndef = function (x) {
+  return typeof x === 'undefined';
+};
 
 var geoclient = function (endpoint) {
   return function (data) {
@@ -27,6 +31,56 @@ var geoclient = function (endpoint) {
     return $dfd.promise();
   };
 };
+
+/**
+ * This generic function takes a list of functions, each of which should
+ * return a promise, calling them in sequence and passing the data from each
+ * to the next.  A single failure aborts the sequence.
+ *
+ * functions: Array of functions to execute
+ * data: Data to pass to initial function.  This will *not* be copied and could
+ *       be mutated.
+ *
+ * Will return a Promise whose `done` or `fail` callbacks will be called with
+ * `data` as the sole argument, and in the second case with `data` and `error`.
+ */
+/*
+var pipeline = function (functions, data, $dfd, idx) {
+  functions = functions || [];
+  $dfd = $dfd || new $.Deferred();
+  idx = idx || 0;
+  var next = functions[idx],
+      $promise;
+  if (next) {
+
+    // Ensure that pipeline is passed a function.
+    if (!$.isFunction(next)) {
+      $dfd.reject(data, "pipeline passed a non-function: '" + next + "'");
+    }
+
+    $promise = next(data);
+
+    // Ensure that pipeline function returns a promise.
+    if (!$.isFunction($promise.fail) || !$.isFunction($promise.done)) {
+      $dfd.reject(data,
+                  "pipeline passed a function that didn't return a promise");
+    }
+
+    // Call the next pipeline function with prior data if the function succeeds.
+    $promise.done(function (results) {
+      pipeline(functions, results, $dfd, idx + 1);
+
+    // Abort the pipeline with last set of data if the function fails.
+    }).fail(function (results) {
+      $dfd.reject(results,
+                  "pipeline aborted by failed function in position " + idx);
+    });
+  } else {
+    $dfd.resolve(data);
+  }
+  return $dfd.promise();
+};
+*/
 
 /**
  * This function takes a raw address and splits it into houseNumber, street,
@@ -94,11 +148,13 @@ var App = React.createClass({
   render: function () {
     return (
       <div>
-      <NavBar ref='navbar'
-              submit={this.submit}
-              mode={this.props.mode}
-              input={this.state.input}
-              setInput={this.setInput} />
+        <Status ref='status'
+                status={this.props.status} />
+        <NavBar ref='navbar'
+                submit={this.submit}
+                mode={this.props.mode}
+                input={this.state.input}
+                setInput={this.setInput} />
         <Results data={this.props.data} />
       </div>
     );
@@ -106,15 +162,31 @@ var App = React.createClass({
 
 });
 
+var Status = React.createClass({
+  render: function () {
+    return (
+      <div>
+        {this.props.status.text}
+      </div>
+    );
+  }
+});
+
 var Results = React.createClass({
 
   render: function () {
 
     return (
-      <Reactable.Table className="table" data={this.props.data}
+      <Reactable.Table className="table"
+             data={this.props.data}
              defaultSort={'recorded_datetime'}
              sortable={[ 'recorded_datetime', 'document_date']}
-             columns={["doc_type", "document_date", "document_amt", "party1.name", "party1.addr1", "party1.addr2", "party1.state", "party1.city", "party1.country", "party1.zip", "party2.name", "party2.addr1", "party2.addr2", "party2.city", "party2.country", "party2.zip"]}
+             columns={["doc_type", "document_date", "document_amt",
+                       "party1.name", "party1.addr1", "party1.addr2",
+                       "party1.state", "party1.city", "party1.country",
+                       "party1.zip", "party2.name", "party2.addr1",
+                       "party2.addr2", "party2.city", "party2.country",
+                       "party2.zip"]}
              filterable={["doc_type"]}>
       </Reactable.Table>
     );
@@ -127,7 +199,7 @@ var NavBar = React.createClass({
 
   onSubmit: function (evt) {
     evt.preventDefault();
-    if (typeof this.refs.inputbar._renderedComponent.validate() === 'undefined') {
+    if (isUndef(this.refs.inputbar._renderedComponent.validate())) {
       this.props.submit();
     }
   },
@@ -135,11 +207,17 @@ var NavBar = React.createClass({
   render: function () {
     var mode = this.props.mode;
     return (
-      <nav className="navbar navbar-default" role="navigation">
+      <nav className="navbar navbar-default"
+           role="navigation">
         <div className="container">
           <div className="navbar-header">
-            <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
-              <span className="sr-only">Toggle navigation</span>
+            <button type="button"
+                    className="navbar-toggle collapsed"
+                    data-toggle="collapse"
+                    data-target="#navbar-collapse">
+              <span className="sr-only">
+                Toggle navigation
+              </span>
               <span className="icon-bar"></span>
               <span className="icon-bar"></span>
               <span className="icon-bar"></span>
@@ -150,23 +228,42 @@ var NavBar = React.createClass({
           </div>
 
           <form ref="form" onSubmit={this.onSubmit}>
-            <div className="collapse navbar-collapse" id="navbar-collapse">
+            <div className="collapse navbar-collapse"
+                 id="navbar-collapse">
               <ul className="nav navbar-nav">
-                <li className={mode == 'address' ? 'active': ''}>
-                  <ReactRouter.Link to='address' params={this.props.input}>Address</ReactRouter.Link>
+                <li className=
+                    {mode === 'address' ? 'active': ''}>
+                  <ReactRouter.Link to='address'
+                                    params={this.props.input}>
+                    Address
+                  </ReactRouter.Link>
                 </li>
-                <li className={mode == 'owner' ? 'active': ''}>
-                  <ReactRouter.Link to='owner' params={this.props.input}>Owner</ReactRouter.Link>
+                <li className=
+                    {mode === 'owner' ? 'active': ''}>
+                  <ReactRouter.Link to='owner'
+                                    params={this.props.input}>
+                    Owner
+                  </ReactRouter.Link>
                 </li>
-                <li className={mode == 'bbl' ? 'active': ''}>
-                  <ReactRouter.Link to='bbl' params={this.props.input}>BBL</ReactRouter.Link>
+                <li className=
+                    {mode === 'bbl' ? 'active': ''}>
+                  <ReactRouter.Link to='bbl'
+                                    params={this.props.input}>
+                    BBL
+                  </ReactRouter.Link>
                 </li>
-                <ReactRouter.RouteHandler
-                      ref='inputbar'
-                      input={this.props.input}
-                      setInput={this.props.setInput} />
                 <li>
-                  <button type="submit" id="submit">Submit</button>
+                  <ReactRouter.RouteHandler
+                        ref='inputbar'
+                        input={this.props.input}
+                        setInput={this.props.setInput} />
+                </li>
+                <li>
+                  <button type="submit"
+                          className="btn btn-default"
+                          id="submit">
+                    Submit
+                  </button>
                 </li>
               </ul>
             </div>
@@ -304,7 +401,7 @@ var BBLBar = React.createClass({
 
 var AddressBar = React.createClass({
 
-  onAddressChange: function (evt) {
+  onAddressChange: function () {
     var rawAddress = this.refs.address.getDOMNode().value;
     this.props.setInput({address: rawAddress});
   },
@@ -344,7 +441,25 @@ var search = function (type) {
       partiesResource = "636b-3b5g",
       appToken = ".json?$$app_token=UlQ1WIMp3NyhVF2Km0zveytPV";
 
-  if (type == 'owner') {
+  if (type === 'address') {
+    return function (address) {
+      var split = splitAddress(address),
+          $dfd = new $.Deferred();
+      geoclient('address')(split).done(function (resp) {
+        var borough = resp.bblBoroughCode,
+            block = resp.bblTaxBlock,
+            lot = resp.bblTaxLot;
+        search('bbl')(borough, block, lot).done(function () {
+          $dfd.resolve.apply(undefined, arguments);
+        }).fail(function () {
+          $dfd.reject.apply(undefined, arguments);
+        });
+      }).fail(function (resp) {
+        $dfd.reject(resp.message);
+      });
+      return $dfd;
+    };
+  } else if (type === 'owner') {
     return function (name, address) {
       name = name || '';
       address = address || '';
@@ -443,57 +558,77 @@ var NotFound = React.createClass({
 
 $(document).ready(function () {
   var routes = (
-    <ReactRouter.Route name="index" path="/" handler={App}>
-      <ReactRouter.Route name="address" path="address/?:address?" handler={AddressBar} />
-      <ReactRouter.Route name="owner" path="owner/?:name?/?:address?" handler={OwnerBar} />
-      <ReactRouter.Route name="bbl" path="bbl/?:borough?/?:block?/?:lot?" handler={BBLBar} />
+    <ReactRouter.Route name="index"
+                       path="/"
+                       handler={App}>
+      <ReactRouter.Route name="address"
+                         path="address/?:address?"
+                         handler={AddressBar} />
+      <ReactRouter.Route name="owner"
+                         path="owner/?:name?/?:address?"
+                         handler={OwnerBar} />
+      <ReactRouter.Route name="bbl"
+                         path="bbl/?:borough?/?:block?/?:lot?"
+                         handler={BBLBar} />
       <ReactRouter.NotFoundRoute handler={NotFound} />
     </ReactRouter.Route>
   );
 
-  ReactRouter.run(routes, ReactRouter.HistoryLocation, function (Handler, state) {
+  ReactRouter.run(routes,
+                  ReactRouter.HistoryLocation, function (Handler, state) {
     var activeRoute = state.routes[1],
         mode,
+        args,
+        status,
         input;
 
     if (activeRoute) {
       mode = activeRoute.name;
       input = state.params;
       for (var k in input) {
-        input[k] = decodeURIComponent(input[k]);
+        if (input[k]) {
+          input[k] = decodeURIComponent(input[k]);
+        }
       }
     }
+
+    status = {
+      text: 'ready'
+    };
 
     // TODO break this out
-    if (mode === 'address') {
-      var split = splitAddress(input.address);
-      geoclient('address')(split).done(function (resp) {
-        search('bbl')(resp.bblBoroughCode,
-                      resp.bblTaxBlock,
-                      resp.bblTaxLot).done(function (data) {
-          React.render(<Handler mode={mode} input={input} data={data} />,
-                       document.body);
-        });
+    // TODO validate the input
+    if (mode === 'address' && input.address) {
+      args = [input.address];
+      status.text = 'loading address';
+    } else if (mode === 'bbl' && input.borough && input.block && input.lot) {
+      args = [input.borough, input.block, input.lot];
+      status.text = 'loading bbl';
+    } else if (mode === 'owner' && (input.name || input.address)) {
+      args = [input.name, input.address];
+      status.text = 'loading owner';
+    }
+    if (args) {
+      search(mode).apply(undefined, args).done(function (data) {
+        status.text = 'loaded';
+        React.render(<Handler mode={mode}
+                              input={input}
+                              status={status}
+                              data={data} />,
+                     document.body);
+      }).fail(function () {
+        status.text = 'failed';
+        React.render(<Handler mode={mode}
+                              input={input}
+                              status={status}
+                              data={[]} />,
+                     document.body);
       });
-    } else if (mode === 'bbl') {
-      if (input.borough && input.block && input.lot) {
-        search('bbl')(input.borough,
-                      input.block,
-                      input.lot).done(function (data) {
-          React.render(<Handler mode={mode} input={input} data={data} />,
-                       document.body);
-        });
-      }
-    } else if (mode === 'owner') {
-      if (input.name || input.address) {
-        search('owner')(input.name, input.address).done(function (data) {
-          React.render(<Handler mode={mode} input={input} data={data} />,
-                       document.body);
-        });
-      }
     }
 
-    React.render(<Handler mode={mode} input={input} />, document.body);
+    React.render(<Handler mode={mode}
+                          status={status}
+                          input={input} />, document.body);
   });
 });
 
