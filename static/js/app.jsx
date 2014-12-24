@@ -33,6 +33,60 @@ var geoclient = function (endpoint) {
 };
 
 /**
+ * Join datasets alpha and beta, both arrays, on key on.  If alphaName or
+ * betaName is provided in `opts`, resultant keys will be prepended with that
+ * name.  If provided value is a callback, it will be executed with that row
+ * of data to determine key.
+ *
+ * Returns the new dataset.
+ */
+var join = function (alpha, beta, on, opts) {
+  var out = [];
+
+  opts = {} || opts;
+
+  //for (i = 0; i < masterData.length; i++) {
+  //  for (j = 0; j < data.length; j++) {
+  //    if (masterData[i].document_id === data[j].document_id) {
+  //      for (k in masterData[i]) {
+  //        data[j][k] = masterData[i][k];
+  //      }
+  //    }
+  //  }
+  //}
+  //for (i = 0; i < partiesData.length; i++) {
+  //  for (j = 0; j < data.length; j++) {
+  //    if (partiesData[i].document_id === data[j].document_id) {
+  //      for (k in partiesData[i]) {
+  //        var outK = 'party' + partiesData[i].party_type + '.' + k;
+  //        if (outK in data[j]) {
+  //          data[j][outK] += ', ' + partiesData[i][k];
+  //        } else {
+  //          data[j][outK] = partiesData[i][k];
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
+
+  for (var i = 0; i < alpha.length; i += 1) {
+    for (var j = 0; j < beta.length; j += 1) {
+      if (alpha[i][on] === beta[j][on]) {
+        var o = {};
+        for (var k in alpha[i]) {
+          o[k] = alpha[i][k];
+        }
+        for (k in beta[j]) {
+          o[k] = beta[j][k];
+        }
+        out.push(o);
+      }
+    }
+  }
+  return out;
+};
+
+/**
  * This generic function takes a list of functions, each of which should
  * return a promise, calling them in sequence and passing the data from each
  * to the next.  A single failure aborts the sequence.
@@ -532,34 +586,13 @@ var search = function (type) {
           dataType: "jsonp"
         });
 
-        var j = 0;
         $.when(master, parties).done(function (masterResp, partiesResp) {
           var masterData = masterResp[0],
-              partiesData = partiesResp[0],
-              k;
-          for (i = 0; i < masterData.length; i++) {
-            for (j = 0; j < data.length; j++) {
-              if (masterData[i].document_id === data[j].document_id) {
-                for (k in masterData[i]) {
-                  data[j][k] = masterData[i][k];
-                }
-              }
-            }
-          }
-          for (i = 0; i < partiesData.length; i++) {
-            for (j = 0; j < data.length; j++) {
-              if (partiesData[i].document_id === data[j].document_id) {
-                for (k in partiesData[i]) {
-                  var outK = 'party' + partiesData[i].party_type + '.' + k;
-                  if (outK in data[j]) {
-                    data[j][outK] += ', ' + partiesData[i][k];
-                  } else {
-                    data[j][outK] = partiesData[i][k];
-                  }
-                }
-              }
-            }
-          }
+              partiesData = partiesResp[0];
+          data = join(data, masterData, 'document_id');
+          data = join(data, partiesData, 'document_id', {
+            nameB: function (d) { return 'party' + d.party_type; }
+          });
           $dfd.resolve(data);
         });
       });
