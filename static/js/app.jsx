@@ -175,22 +175,27 @@ var Status = React.createClass({
 var Results = React.createClass({
 
   render: function () {
-
+    var columns = [];
+    if (this.props.data) {
+      for (var k in this.props.data[0]) {
+        columns.push(k);
+      }
+    }
     return (
       <Reactable.Table className="table"
              data={this.props.data}
              defaultSort={'recorded_datetime'}
              sortable={[ 'recorded_datetime', 'document_date']}
-             columns={["doc_type", "document_date", "document_amt",
-                       "party1.name", "party1.addr1", "party1.addr2",
-                       "party1.state", "party1.city", "party1.country",
-                       "party1.zip", "party2.name", "party2.addr1",
-                       "party2.addr2", "party2.city", "party2.country",
-                       "party2.zip"]}
+             columns={columns}
+             //columns={["doc_type", "document_date", "document_amt",
+             //          "party1.name", "party1.addr1", "party1.addr2",
+             //          "party1.state", "party1.city", "party1.country",
+             //          "party1.zip", "party2.name", "party2.addr1",
+             //          "party2.addr2", "party2.city", "party2.country",
+             //          "party2.zip"]}
              filterable={["doc_type"]}>
       </Reactable.Table>
     );
-
   }
 
 });
@@ -445,15 +450,20 @@ var search = function (type) {
     return function (address) {
       var split = splitAddress(address),
           $dfd = new $.Deferred();
+      $dfd.notify('Determining BBL');
       geoclient('address')(split).done(function (resp) {
         var borough = resp.bblBoroughCode,
             block = resp.bblTaxBlock,
             lot = resp.bblTaxLot;
         search('bbl')(borough, block, lot).done(function () {
           $dfd.resolve.apply(undefined, arguments);
+        }).progress(function (message) {
+          $dfd.notify(message);
         }).fail(function () {
           $dfd.reject.apply(undefined, arguments);
         });
+      }).progress(function (message) {
+        $dfd.notify(message);
       }).fail(function (resp) {
         $dfd.reject(resp.message);
       });
@@ -484,12 +494,23 @@ var search = function (type) {
           borough + " and block=" + block + " and lot=" + lot,
           $dfd = new $.Deferred();
 
+      $dfd.notify('Looking up transactions involving ' + borough + '/' + block +
+                  '/' + lot);
+
       // Obtain property JSON
       $.ajax({
         url: url,
         jsonp: "$jsonp",
         dataType: "jsonp"
       }).done(function(data) {
+
+        // Don't make any additional calls if no records for this address.
+        if (!data.length) {
+          $dfd.resolve([]);
+        }
+
+        $dfd.notify('Looking up parties and records for ' + data.length +
+                    ' records involving ' + borough + '/' + block + '/' + lot);
 
         var where = [];
         var i = 0;
@@ -615,6 +636,13 @@ $(document).ready(function () {
                               input={input}
                               status={status}
                               data={data} />,
+                     document.body);
+      }).progress(function (message) {
+        status.text = message;
+        React.render(<Handler mode={mode}
+                              input={input}
+                              status={status}
+                              data={[]} />,
                      document.body);
       }).fail(function () {
         status.text = 'failed';
